@@ -11,7 +11,7 @@ from keras.layers import Input
 from keras.layers.core import Lambda
 from keras.layers.merge import Concatenate
 from keras.datasets import mnist
-from .MultiGPU import ToMultiGPU
+from MultiGPU import to_multi_gpu
 
 
 class MnistClassification:
@@ -26,6 +26,8 @@ class MnistClassification:
         
         
     def model_definition(self):
+
+        # CNN(Conv-Conv-MaxPool-FC-FC[softmax])
         self.model = Sequential()
         self.model.add(Conv2D(32, kernel_size=(3, 3),
                               activation='relu',
@@ -38,7 +40,8 @@ class MnistClassification:
         self.model.add(Dropout(0.5))
         self.model.add(Dense(self.num_classes, activation='softmax'))
 
-        self.model = ToMultiGPU.to_multi_gpu(self.model)
+        # Using multi gpu
+        self.model = to_multi_gpu(self.model)
 
         self.model.compile(loss=keras.losses.categorical_crossentropy,
                            optimizer=keras.optimizers.Adadelta(),
@@ -49,6 +52,7 @@ class MnistClassification:
         # the data, shuffled and split between train and test sets
         (x_train, y_train), (x_test, y_test) = mnist.load_data()
         
+        # Reshape input images
         if K.image_data_format() == 'channels_first':
             self.x_train = x_train.reshape(x_train.shape[0], 1, self.img_rows, self.img_cols)
             self.x_test = x_test.reshape(x_test.shape[0], 1, self.img_rows, self.img_cols)
@@ -58,7 +62,8 @@ class MnistClassification:
             self.x_train = x_train.reshape(x_train.shape[0], self.img_rows, self.img_cols, 1)
             self.x_test = x_test.reshape(x_test.shape[0], self.img_rows, self.img_cols, 1)
             self.input_shape = (self.img_rows, self.img_cols, 1)
-            
+
+        # Regurarization
         self.x_train = self.x_train.astype('float32')
         self.x_test = self.x_test.astype('float32')
         self.x_train /= 255
@@ -74,11 +79,8 @@ class MnistClassification:
         self.model_definition()
 
         # Run
-        self.model.fit(self.x_train, self.y_train,
-                       batch_size=self.batch_size,
-                       epochs=self.epochs,
-                       verbose=1,
-                       validation_data=(self.x_test, self.y_test))
+        self.model.fit(self.x_train, self.y_train, batch_size=self.batch_size,
+                       epochs=self.epochs, verbose=1, validation_data=(self.x_test, self.y_test))
 
         self.score = self.model.evaluate(self.x_test, self.y_test, verbose=0)
 
