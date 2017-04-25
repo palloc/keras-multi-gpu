@@ -41,7 +41,7 @@ class MnistClassification:
         self.model.add(Dense(self.num_classes, activation='softmax'))
 
         # Using multi gpu
-        self.model = to_multi_gpu(self.model)
+        self.model = to_multi_gpu(self.model, n_gpus=1)
 
         self.model.compile(loss=keras.losses.categorical_crossentropy,
                            optimizer=keras.optimizers.Adadelta(),
